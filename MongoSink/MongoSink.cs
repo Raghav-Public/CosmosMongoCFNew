@@ -105,6 +105,7 @@ namespace MongoSink
             }
             catch(Exception exp)
             {
+                Console.WriteLine(exp.Message);
                 throw;
             }
         }
