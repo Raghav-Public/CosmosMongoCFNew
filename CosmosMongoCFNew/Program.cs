@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using CosmosDBInteropSchemaDecoder;
 using System.Configuration;
 using MongoSink;
+using Newtonsoft.Json;
 
 namespace CosmosMongoCFNew
 {
@@ -35,9 +36,10 @@ namespace CosmosMongoCFNew
         public static string transformationType = ConfigurationManager.AppSettings["transformationType"];
         public static string sourceKeys = ConfigurationManager.AppSettings["sourceKeys"];
         public static string destinationKey = ConfigurationManager.AppSettings["destinationKey"];
+        public static string sourceKeyTransformationString = ConfigurationManager.AppSettings["sourceKeyTransformation"];
         
         public static CancellationTokenSource source = new CancellationTokenSource();
-
+        
         static void Main(string[] args)
         {
             try
@@ -86,10 +88,25 @@ namespace CosmosMongoCFNew
                                                                     insertRetries,
                                                                     blobConnectionString,
                                                                     blobContainer);
+            SourceTransformation sourceTransformation = null;
+            if (!string.IsNullOrEmpty(sourceKeyTransformationString))
+            {
+                try
+                {
+                    sourceTransformation = JsonConvert.DeserializeObject<SourceTransformation>
+                                                                    (sourceKeyTransformationString);
+                }
+                catch(Exception exp)
+                {
+                    Console.WriteLine(exp.Message);
+                }
+            }
             Transformation transformation = new Transformation(transformationType,
                 sourceKeys,
                 destinationKey,
-                delimiter);
+                delimiter,
+                sourceTransformation);
+
             Console.WriteLine("Received data from the source:" + changes.Count.ToString());
             foreach (object item in changes)
             {
