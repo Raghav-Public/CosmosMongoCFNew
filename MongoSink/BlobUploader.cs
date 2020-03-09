@@ -30,7 +30,7 @@ namespace MongoSink
                 CloudBlobContainer container = blobClient.
                                                     GetContainerReference(this.BlobContainer);
                 CloudBlockBlob blockBlob = container.
-                                            GetBlockBlobReference(new Guid().ToString() + ".json");
+                                            GetBlockBlobReference(Guid.NewGuid().ToString() + ".json");
                 blockBlob.UploadText(data);
             }
             catch(Exception exp)
