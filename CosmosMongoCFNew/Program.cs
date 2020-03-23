@@ -114,6 +114,7 @@ namespace CosmosMongoCFNew
                 JObject objects = JObject.Parse(item.ToString());
                 objects.Remove("_lsn");
                 objects.Remove("_metadata");
+                objects.Remove("_id");
                 string json = objects.ToString();
                 MongoDB.Bson.BsonDocument bdoc = CosmosDbSchemaDecoder.GetBsonDocument(json, false);
                 if (transformationType != "NONE")
