@@ -66,7 +66,7 @@ namespace MongoSink
                         System.Threading.Thread.Sleep(new Random().Next(1, 3));
                         if(i == InsertRetries - 1)
                         {
-                            Console.WriteLine("retried for:" + InsertRetries);
+                            Console.WriteLine("retried for: " + InsertRetries);
                             throw;
                         }
                     }
