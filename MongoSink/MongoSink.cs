@@ -61,15 +61,13 @@ namespace MongoSink
                 }
                 catch (Exception exp)
                 {
-                    if(!IsThrottled(exp))
-                    {
-                        Console.WriteLine("Being throttled");
-                        Console.WriteLine(exp.Message);
-                        throw;
-                    }
-                    else
+                    if(IsThrottled(exp))
                     {
                         System.Threading.Thread.Sleep(new Random().Next(1, 3));
+                        if(i == InsertRetries - 1)
+                        {
+                            throw;
+                        }
                     }
                     Console.WriteLine(exp.Message);
                 }
