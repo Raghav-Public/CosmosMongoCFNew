@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace CosmosMongoCFNew
         public string Type { get; set; }
         public string SourceKeys { get; set; }
         public string DestinationKey { get; set; }
+
+        public string SwapKeyValues { get; set; }
         public string Delimiter { get; set; }
 
         public SourceTransformation SourceKeyTransformation { get; set; }
@@ -19,13 +22,15 @@ namespace CosmosMongoCFNew
                               string sourceKeys,
                               string destinationKey,
                               string delimiter,
-                              SourceTransformation sourceKeyTransformation)
+                              SourceTransformation sourceKeyTransformation,
+                              string swapKeyValues)
         {
             this.Type = type.ToUpper();
             this.SourceKeys = sourceKeys;
             this.DestinationKey = destinationKey;
             this.Delimiter = delimiter;
             this.SourceKeyTransformation = sourceKeyTransformation;
+            this.SwapKeyValues = swapKeyValues;
         }
 
         public MongoDB.Bson.BsonDocument Execute(MongoDB.Bson.BsonDocument _doc)
@@ -38,8 +43,23 @@ namespace CosmosMongoCFNew
                 case "AGGRIGATION":
                     return Aggrigate(_doc);
                     break;
-                    //case "DELETION":
-                    //    break;
+                case "SWAP":
+                    return Swap(_doc);
+                    break;
+            }
+            return _doc;
+        }
+        private MongoDB.Bson.BsonDocument Swap(MongoDB.Bson.BsonDocument _doc)
+        {
+            var keys = JsonConvert.DeserializeObject<List<SwapKeyValue>>(this.SwapKeyValues);
+            foreach (SwapKeyValue skv in keys)
+            {
+                MongoDB.Bson.BsonElement v = new MongoDB.Bson.BsonElement();
+                if (_doc.TryGetElement(skv.Source, out v))
+                {
+                    _doc.Add(new MongoDB.Bson.BsonElement(skv.Destination, _doc[skv.Source]));
+                    _doc.Remove(skv.Source);
+                }
             }
             return _doc;
         }
