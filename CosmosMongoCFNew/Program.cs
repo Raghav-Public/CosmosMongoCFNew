@@ -37,7 +37,8 @@ namespace CosmosMongoCFNew
         public static string sourceKeys = ConfigurationManager.AppSettings["sourceKeys"];
         public static string destinationKey = ConfigurationManager.AppSettings["destinationKey"];
         public static string sourceKeyTransformationString = ConfigurationManager.AppSettings["sourceKeyTransformation"];
-        
+        public static string swapKeyValues = ConfigurationManager.AppSettings["swapKeyValues"];
+
         public static CancellationTokenSource source = new CancellationTokenSource();
         
         static void Main(string[] args)
@@ -45,6 +46,11 @@ namespace CosmosMongoCFNew
             try
             {
                 Program.RunStartFromBeginningChangeFeed().Wait();
+            }
+            catch(Exception exp)
+            {
+                Console.WriteLine(exp.Message);
+                throw;
             }
             finally
             {
@@ -54,31 +60,39 @@ namespace CosmosMongoCFNew
         }
         public static async Task RunStartFromBeginningChangeFeed()
         {
-            CosmosClient leaseClient = new CosmosClient(leaseEndpoint, leaseAuthKey);
-            CosmosClient monitoredClient = new CosmosClient(monitoredEndpoint, monitoredAuthKey);
+            try
+            {
+                CosmosClient leaseClient = new CosmosClient(leaseEndpoint, leaseAuthKey);
+                CosmosClient monitoredClient = new CosmosClient(monitoredEndpoint, monitoredAuthKey);
 
-            Container leaseContainer = leaseClient.GetContainer(leaseDBName, leaseContainerName);
-            Container monitoredContainer = monitoredClient.GetContainer(monitoredDBName, monitoredContainerName);
+                Container leaseContainer = leaseClient.GetContainer(leaseDBName, leaseContainerName);
+                Container monitoredContainer = monitoredClient.GetContainer(monitoredDBName, monitoredContainerName);
 
-            ChangeFeedProcessor changeFeedProcessor = monitoredContainer
-                .GetChangeFeedProcessorBuilder<object>("ChangeFeedProc", Program.HandleChangesAsync)
-                    .WithInstanceName(Guid.NewGuid().ToString())
-                    .WithLeaseContainer(leaseContainer)
-                    .WithStartTime(DateTime.MinValue.ToUniversalTime())
-                    .WithMaxItems(maxItems)
-                    //.WithPollInterval(TimeSpan.FromSeconds(3))
-                    .Build();
-            // </StartFromBeginningInitialization>
+                ChangeFeedProcessor changeFeedProcessor = monitoredContainer
+                    .GetChangeFeedProcessorBuilder<object>("ChangeFeedProc", Program.HandleChangesAsync)
+                        .WithInstanceName(Guid.NewGuid().ToString())
+                        .WithLeaseContainer(leaseContainer)
+                        .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                        .WithMaxItems(maxItems)
+                        //.WithPollInterval(TimeSpan.FromSeconds(3))
+                        .Build();
+                // </StartFromBeginningInitialization>
 
-            Console.WriteLine($"Starting Change Feed Processor with changes since the beginning...");
-            await changeFeedProcessor.StartAsync();
-            Console.WriteLine("Change Feed Processor started.");
+                Console.WriteLine($"Starting Change Feed Processor with changes since the beginning...");
+                await changeFeedProcessor.StartAsync();
+                Console.WriteLine("Change Feed Processor started.");
 
-            // Wait random time for the delegate to output all messages after initialization is done
-            await Task.Delay(Int32.MaxValue);
-            Console.WriteLine("Press any key to continue with the next demo...");
-            Console.ReadKey();
-            await changeFeedProcessor.StopAsync();
+                // Wait random time for the delegate to output all messages after initialization is done
+                await Task.Delay(Int32.MaxValue);
+                Console.WriteLine("Press any key to continue with the next demo...");
+                Console.ReadKey();
+                await changeFeedProcessor.StopAsync();
+            }
+            catch(Exception exp)
+            {
+                Console.WriteLine(exp.Message);
+                throw;
+            }
         }
         static async Task HandleChangesAsync(IReadOnlyCollection<object> changes, CancellationToken cancellationToken)
         {
@@ -105,7 +119,8 @@ namespace CosmosMongoCFNew
                 sourceKeys,
                 destinationKey,
                 delimiter,
-                sourceTransformation);
+                sourceTransformation,
+                swapKeyValues);
 
             Console.WriteLine("Received data from the source:" + changes.Count.ToString());
             foreach (object item in changes)
