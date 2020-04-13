@@ -96,6 +96,10 @@ namespace CosmosMongoCFNew
         }
         static async Task HandleChangesAsync(IReadOnlyCollection<object> changes, CancellationToken cancellationToken)
         {
+            MongoSink.BlobUploader blobUploader = new MongoSink.BlobUploader(
+                                                            blobConnectionString,
+                                                            blobContainer);
+
             MongoSink.MongoSink mongoSink = new MongoSink.MongoSink(destConnectionString, 
                                                                     destDBName,
                                                                     destContainerName,
@@ -125,18 +129,25 @@ namespace CosmosMongoCFNew
             Console.WriteLine("Received data from the source:" + changes.Count.ToString());
             foreach (object item in changes)
             {
-                //Console.WriteLine(item.ToString());
-                JObject objects = JObject.Parse(item.ToString());
-                objects.Remove("_lsn");
-                objects.Remove("_metadata");
-                objects.Remove("_id");
-                string json = objects.ToString();
-                MongoDB.Bson.BsonDocument bdoc = CosmosDbSchemaDecoder.GetBsonDocument(json, false);
-                if (transformationType != "NONE")
+                try
                 {
-                    transformation.Execute(bdoc);
+                    //Console.WriteLine(item.ToString());
+                    JObject objects = JObject.Parse(item.ToString());
+                    objects.Remove("_lsn");
+                    objects.Remove("_metadata");
+                    objects.Remove("_id");
+                    string json = objects.ToString();
+                    MongoDB.Bson.BsonDocument bdoc = CosmosDbSchemaDecoder.GetBsonDocument(json, false);
+                    if (transformationType != "NONE")
+                    {
+                        transformation.Execute(bdoc);
+                    }
+                    await mongoSink.InsertAsync(bdoc, source.Token);
                 }
-                await mongoSink.InsertAsync(bdoc, source.Token);
+                catch(Exception exp)
+                {
+                    blobUploader.Upload(item.ToString());              
+                }
             }
         }
     }
