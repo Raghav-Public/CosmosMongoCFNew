@@ -9,7 +9,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace MongoSink
 {
-    class BlobUploader
+    public class BlobUploader
     {
         public string BlobConnectionString { get; set; }
         public string BlobContainer { get; set; }
