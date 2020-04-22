@@ -11,6 +11,7 @@ namespace MongoSink
 {
     public class MongoSink
     {
+        public bool IsUpsert { get; set; }
         public string ConnectionString { get; set; }
         public string DatabaseName { get; set; }
         public string CollectionName { get; set; }
@@ -23,7 +24,8 @@ namespace MongoSink
                          string collectionName,
                          int insertRetries,
                          string blobConnectionString,
-                         string blobContainer)
+                         string blobContainer,
+                         bool isUpsert)
         {
             this.ConnectionString = connectionString;
             this.DatabaseName = databaseName;
@@ -31,6 +33,7 @@ namespace MongoSink
             this.InsertRetries = insertRetries;
             this.BlobConnectionString = blobConnectionString;
             this.BlobContainerName = blobContainer;
+            this.IsUpsert = isUpsert;
         }
 
         private void getCollection()
@@ -49,13 +52,27 @@ namespace MongoSink
                 Console.WriteLine(exp.Message);
             }
         }
-        private async Task insertDocumentAsync(BsonDocument _doc, CancellationToken cancellationToken)
+        private async Task FindDoc(BsonDocument _doc)
+        {
+            MongoCollection.FindAsync(new BsonDocument("_id", _doc.GetValue("_id")))
+        }
+        private async Task insertUpdateDocumentAsync(BsonDocument _doc, CancellationToken cancellationToken)
         {
             bool success = false;
             for (int i = 0; i < InsertRetries; i++) {
                 try
                 {
-                    await MongoCollection.InsertOneAsync(_doc, cancellationToken);
+                    if (IsUpsert)
+                    {
+                        await MongoCollection.ReplaceOneAsync(
+                            filter: new BsonDocument("_id", _doc.GetValue("_id")),
+                            options: new UpdateOptions { IsUpsert = true },
+                            replacement: _doc);
+                    }
+                    else
+                    {
+                        await MongoCollection.InsertOneAsync(_doc, cancellationToken);
+                    }
                     success = true;
                     break;
                 }
@@ -88,7 +105,7 @@ namespace MongoSink
             {
                 Console.WriteLine("trying to insert:" + _doc["_id"]);
                 this.getCollection();
-                await insertDocumentAsync(_doc, cancellationToken);
+                await insertUpdateDocumentAsync(_doc, cancellationToken);
             }
             catch(Exception exp)
             {
