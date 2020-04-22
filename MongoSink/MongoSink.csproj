@@ -108,6 +108,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlobToCosmos.cs" />
     <Compile Include="BlobUploader.cs" />
     <Compile Include="MongoSink.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
