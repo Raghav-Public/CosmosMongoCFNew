@@ -38,6 +38,7 @@ namespace CosmosMongoCFNew
         public static string destinationKey = ConfigurationManager.AppSettings["destinationKey"];
         public static string sourceKeyTransformationString = ConfigurationManager.AppSettings["sourceKeyTransformation"];
         public static string swapKeyValues = ConfigurationManager.AppSettings["swapKeyValues"];
+        public static bool isUpsert = bool.Parse(ConfigurationManager.AppSettings["isUpsert"]);
 
         public static CancellationTokenSource source = new CancellationTokenSource();
         
@@ -105,7 +106,8 @@ namespace CosmosMongoCFNew
                                                                     destContainerName,
                                                                     insertRetries,
                                                                     blobConnectionString,
-                                                                    blobContainer);
+                                                                    blobContainer,
+                                                                    isUpsert);
             SourceTransformation sourceTransformation = null;
             if (!string.IsNullOrEmpty(sourceKeyTransformationString))
             {
