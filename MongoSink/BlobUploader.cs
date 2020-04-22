@@ -26,11 +26,13 @@ namespace MongoSink
             {
                 string filename = Guid.NewGuid().ToString() + ".json";
                 Console.WriteLine("writing failed data to:" + filename);
-                CloudStorageAccount storageAccount = CloudStorageAccount
+                /*CloudStorageAccount storageAccount = CloudStorageAccount
                                                         .Parse(this.BlobConnectionString);
                 CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
                 CloudBlobContainer container = blobClient.
                                                     GetContainerReference(this.BlobContainer);
+                                                    */
+                CloudBlobContainer container = GetBlobContainer();
                 container.CreateIfNotExists();
                 CloudBlockBlob blockBlob = container.
                                             GetBlockBlobReference(filename);
@@ -42,6 +44,32 @@ namespace MongoSink
                 Console.WriteLine(exp);
                 throw exp;
             }
+        }
+        private CloudBlobContainer GetBlobContainer()
+        {
+            CloudStorageAccount storageAccount = CloudStorageAccount
+                                                    .Parse(this.BlobConnectionString);
+            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer container = blobClient.
+                                                GetContainerReference(this.BlobContainer);
+            return container;
+        }
+        public List<Uri> GetAllBlobs()
+        {
+            List<Uri> blobUrls = new List<Uri>();
+            CloudBlobContainer container = GetBlobContainer();
+            var blobs = container.ListBlobs();
+            foreach(var blob in blobs)
+            {
+                blobUrls.Add(blob.Uri);
+            }
+            return blobUrls;
+        }
+        public async Task<string> Download(Uri blobUri)
+        {
+            CloudBlobContainer container = GetBlobContainer();
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(blobUri.ToString());
+            return await blockBlob.DownloadTextAsync();
         }
     }
 }
